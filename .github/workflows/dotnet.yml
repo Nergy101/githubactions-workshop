@@ -1,28 +1,52 @@
 name: .NET
 
 on:
- # Configureer triggers voor een push op de main branch
- # Configureer triggers voor een pull request
- # Configureer een trigger voor een handmatige build
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     env:
-      WORKDIR: "TODO"
-      CONFIG: "TODO"
-      AZURE_FUNCTIONAPP_NAME: "TODO"
+      WORKDIR: ./src/HelloWorld
+      CONFIG: Release
+      AZURE_FUNCTIONAPP_NAME: github-actions-workshop-2
     defaults:
       run:
         working-directory: ${{env.WORKDIR}}
 
     steps:
-    - name: "Checkout"
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v2
+        with:
+          dotnet-version: 6.0.x
 
-    - name: Setup .NET
+      - name: Restore dependencies
+        run: dotnet restore
+        shell: bash
 
-    - name: Build and Test a project
+      - name: Build
+        run: dotnet build --no-restore --output ./output
+        shell: bash
 
-    - name: 'Run Azure Functions Action'
+      - name: Test
+        working-directory: ${{ env.WORKDIR }}.UnitTests
+        run: |
+          dotnet test --configuration ${{ env.CONFIG }}
+        shell: bash
 
+      - name: Publish
+        run: |
+          dotnet publish -c ${{ env.CONFIG }}
+        shell: bash
+
+      - name: "Run Azure Functions Action"
+        uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
+          package: ${{env.WORKDIR}}/bin/Release/net6.0/publish/
+          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}

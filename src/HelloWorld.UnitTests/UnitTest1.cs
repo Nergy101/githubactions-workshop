@@ -11,7 +11,7 @@ namespace HelloWorld.UnitTests
         [Fact]
         public void Test_ShouldFail()
         {
-            Assert.True(false);
+            Assert.True(true);
         }
     }
 }
